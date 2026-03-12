@@ -759,6 +759,8 @@ function renderSVTable(){
     const sva=d.reduce((a,s)=>a+(s.SV売上実績||0),0);
     const royal=d.reduce((a,s)=>a+(s.ロイヤリティ実績||0),0);
     const royalTgt=d.reduce((a,s)=>a+(s.ロイヤリティ目標||0),0);
+    const royalMk=d.reduce((a,s)=>a+(s.見込みロイヤリティ||0),0);
+    const svaMk=d.reduce((a,s)=>a+(s.見込みSV売上||s.SV売上実績||0),0);
     return `<tr>
       <td><div style="display:flex;align-items:center;gap:7px"><div style="width:9px;height:9px;border-radius:50%;background:${svc(sv)};flex-shrink:0"></div><strong>${sv}</strong></div></td>
       <td class="num">${d.length}店</td>
@@ -766,14 +768,14 @@ function renderSVTable(){
       <td class="num" style="color:${pcc(p)};font-weight:700">${p}%</td>
       <td class="num" style="color:${pcc(mp)};font-weight:700">${mp}%</td>
       <td class="num">${ok} / ${d.length}</td>
-      <td class="num">¥${fm(royal)} / ¥${fm(royalTgt)}</td>
-      <td class="num">¥${fm(sva)}</td>
+      <td class="num">¥${fm(royalMk)} / ¥${fm(royalTgt)}</td>
+      <td class="num"><span style="color:var(--acc);font-weight:700">¥${fm(svaMk)}</span></td>
     </tr>`;
   });
   const T=stores.reduce((a,s)=>a+(s.売上目標||0),0),A=stores.reduce((a,s)=>a+(s.実績売上||0),0),MK=stores.reduce((a,s)=>a+(s.見込み売上||0),0);
   const P=T?Math.round(A/T*100):0,MP=T?Math.round(MK/T*100):0;
   el.innerHTML=`<table class="svt">
-    <thead><tr><th>SV</th><th>担当店舗</th><th>売上実績 / 目標</th><th>達成率</th><th>見込み達成率</th><th>達成店舗</th><th>ロイヤリティ実績 / 目標</th><th>SV売上実績</th></tr></thead>
+    <thead><tr><th>SV</th><th>担当店舗</th><th>売上実績 / 目標</th><th>達成率</th><th>見込み達成率</th><th>達成店舗</th><th>ロイヤリティ <span style="color:var(--acc)">見込み</span> / 目標</th><th>SV売上 <span style="color:var(--acc)">見込み</span></th></tr></thead>
     <tbody>${rows.join("")}
     <tr style="font-weight:700;background:var(--sur2)">
       <td>合計</td><td class="num">${stores.length}店</td>
@@ -781,8 +783,8 @@ function renderSVTable(){
       <td class="num" style="color:${pcc(P)};font-weight:700">${P}%</td>
       <td class="num" style="color:${pcc(MP)};font-weight:700">${MP}%</td>
       <td class="num">${stores.filter(s=>(s.達成率||0)>=100).length} / ${stores.length}</td>
-      <td class="num">¥${fm(stores.reduce((a,s)=>a+(s.ロイヤリティ実績||0),0))} / ¥${fm(stores.reduce((a,s)=>a+(s.ロイヤリティ目標||0),0))}</td>
-      <td class="num">¥${fm(stores.reduce((a,s)=>a+(s.SV売上実績||0),0))}</td>
+      <td class="num"><span style="color:var(--acc);font-weight:700">¥${fm(stores.reduce((a,s)=>a+(s.見込みロイヤリティ||0),0))}</span> / ¥${fm(stores.reduce((a,s)=>a+(s.ロイヤリティ目標||0),0))}</td>
+      <td class="num"><span style="color:var(--acc);font-weight:700">¥${fm(stores.reduce((a,s)=>a+(s.見込みSV売上||s.SV売上実績||0),0))}</span></td>
     </tr></tbody>
   </table>`;
 }
@@ -1150,13 +1152,13 @@ function getAlerts(){
   const d=mode==="mine"?stores.filter(s=>s.sv===mySV):stores;
 
   d.forEach(s=>{
-    const p=s.達成率||0;
+    const mp=s.見込み達成率||0;
     const t=tasks.find(t=>t.store===s.name)||{};
 
-    // 売上アラート：達成率70%以下
-    if(p<=70&&p>0){
-      alerts.push({type:"sales",lv:p<=50?"red":"amb",store:s.name,sv:s.sv,
-        label:`${s.name} ${p}%`,msg:`達成率${p}%`});
+    // 売上アラート：着地見込みが100%未満
+    if(mp>0&&mp<100){
+      alerts.push({type:"sales",lv:mp<80?"red":"amb",store:s.name,sv:s.sv,
+        label:`${s.name} 見込み${mp}%`,msg:`着地見込み${mp}%`});
     }
 
     // 施策アラート：施策・次回予約特典・スタッフMTG・オーナーMTGが全て未入力
@@ -1184,7 +1186,7 @@ function updateAlertBadge(){
 
   let html="";
   if(salesAlerts.length){
-    html+=`<div style="font-size:10.5px;color:#fca5a5;font-weight:700;margin-bottom:2px">📉 売上 ${salesAlerts.length}件</div>`;
+    html+=`<div style="font-size:10.5px;color:#fca5a5;font-weight:700;margin-bottom:2px">📉 着地未達見込み ${salesAlerts.length}件</div>`;
     html+=salesAlerts.slice(0,5).map(a=>
       `<div style="font-size:11px;color:rgba(255,255,255,.6);padding-left:8px;cursor:pointer" onclick="filterSV('${a.sv}');showView('stores',document.getElementById('nav-stores'))">
         <span style="color:${a.lv==='red'?'#fca5a5':'#fcd34d'}">●</span> ${a.label}
