@@ -883,6 +883,86 @@ function filterSV(sv){
 const RANK_COLORS={松:{bg:"#fef3c7",color:"#92400e",icon:"🌲"},竹:{bg:"#d1fae5",color:"#065f46",icon:"🎋"},梅:{bg:"#fce7f3",color:"#9d174d",icon:"🌸"}};
 const MONTH_NAMES={9:"9月",10:"10月",11:"11月",12:"12月",1:"1月",2:"2月"};
 
+// アクションリスト（フェーズ別）
+const ACTION_LIST = {
+  bussan: {
+    label:"物販売上", icon:"🛍",
+    梅:"①店舗に物販が置いている理由を理解する\n②物販について知るため、自分でも購入して商品を知る\n③講師に、どんな人に説明するべきかどんな言い回しがあるかを聞く\n④物販の説明を一通り（価格・使用感・どんな用途か）できる状態にする\n⑤具体的に目標数値を決める\n⑥売れなくても良いので、まずは言ってみる",
+    竹:"①取扱している物販商品のホームページがあるので、検索して知識を増やす\n②朝の出勤時にお客様の情報を見て、誰に売るか目標を立てる\n③自分専用のPOPを作成する\n④お客様との会話を録音し、自分で振り返る",
+    松:"①自分の目標が達成できてなかったらSVや講師からFBをしてもらう\n②売りやすい価格や割引をSVやオーナーに提案する\n③自分が掲げた目標が達成できたのか、振り返る",
+  },
+  kaisu: {
+    label:"回数券", icon:"🎟",
+    梅:"①なぜ回数券を売る必要があるか理解する\n②回数券をお客さんが買った時にいくら安くなってお得になるのか、メリットを伝えられる状態にする\n③具体的に目標数値決める",
+    竹:"①朝の出勤時にお客さんの情報を見て、誰に売るか目標を立てる\n②施術中から毛周期の話をして、通い続けることでモチがアップすることを伝える\n③お客さんに次回予約を取るタイミングで回数券を促す\n④自分専用のPOPを作成する\n⑤お客様との会話を録音し、自分で振り返る",
+    松:"①自分の目標が達成できてなかったらSVや講師からFBをしてもらう\n②売りやすい価格や割引をSVやオーナーに提案する\n③自分が掲げた目標が達成できたのか、振り返る",
+  },
+  option: {
+    label:"オプション売上", icon:"✨",
+    梅:"①自分でも使用して、効果を知る\n②オプションの説明を一通り（価格・使用感・どんな用途か）できる状態にする\n③オプションが何のためにあるか理解する\n④具体的に目標数値決める",
+    竹:"①朝の出勤時にお客さんの情報を見て、誰に売るか目標を立てる\n②お客さんのまつ毛・眉毛の悩みをヒアリングした上で現状を伝える\n③まずは言ってみる（アクションしないことには売れない）\n④写真や抜け毛が目に見えるものをお客さんに直接見せる\n⑤自分専用のPOPを作成する",
+    松:"①自分の目標が達成できてなかったらSVや講師からFBをしてもらう\n②売りやすい価格や割引をSVやオーナーに提案する\n③自分が掲げた目標が達成できたのか、振り返る",
+  },
+  shimei: {
+    label:"指名数", icon:"🌟",
+    梅:"①なぜ指名数を増やすか理解をする\n②お客さんが指名することによって得られるメリットを言える状態にする\n③指名じゃないと予約がフリーとなってしまうことを話す\n④具体的な目標指名数を決める\n⑤お客様への指名制度を理解してもらうPOPを作成する",
+    竹:"①朝の出勤時にお客さんの情報を見て、誰から指名をとるか目標を立てる\n②同じ人が施術することで技術が安定しデザインも前回と比べやすいことを伝える\n③お客様の雰囲気や性格に合わせる\n④お客様との会話を録音し、自分で振り返る",
+    松:"①自分の目標が達成できてなかったらSVや講師からFBをしてもらう\n②自分が掲げた目標が達成できたのか、振り返る",
+  },
+  gijutsu: {
+    label:"技術面", icon:"💎",
+    梅:"①講師や店舗の先輩に自分の施術画像または動画を送りFBをもらう\n②現状の得意不得意を洗い出す\n③これまで口コミや講師からFBで意見もらったものを振り返る",
+    竹:"①インスタグラム・TikTokで活躍しているアイリストの動画を見て学ぶ\n②他店舗の施術を受けに行ってみる\n③勤務時間外限定でモデルを呼び施術を行う\n④下まつげパーマを取得していない場合、講習に参加して取り入れる",
+    松:"①講師や店舗の先輩に自分の施術画像または動画を送りFBをもらう\n②本部の練習会に参加した店舗のスタッフや講師から直接FBもらう\n③自分が掲げた目標が達成できたのか、振り返る",
+  },
+};
+
+function getItemRank(key, s) {
+  if (key === "bussan")  return s.avgBussan  >= 90000  ? "松" : s.avgBussan  >= 30000 ? "竹" : "梅";
+  if (key === "kaisu")   return s.avgKaisu   >= 11     ? "松" : s.avgKaisu   >= 5     ? "竹" : "梅";
+  if (key === "option")  return s.avgOption  >= 45000  ? "松" : s.avgOption  >= 30000 ? "竹" : "梅";
+  if (key === "shimei")  return s.avgShimei  >= 30     ? "松" : s.avgShimei  >= 10    ? "竹" : "梅";
+  if (key === "gijutsu") return "梅"; // 技術面は常に改善余地あり
+  return "梅";
+}
+
+function renderStaffActions(s) {
+  if (!s.total) return ""; // データなしはスキップ
+  const uid = s.store.replace(/[^\w]/g,"_") + "_" + s.name.replace(/[^\w]/g,"_");
+
+  const items = Object.entries(ACTION_LIST).map(([key, a]) => {
+    const itemRank = getItemRank(key, s);
+    const action = a[itemRank];
+    const c = RANK_COLORS[itemRank];
+    const lines = action.split("\n").map(l=>`<div style="padding:2px 0;font-size:11px;color:var(--ink2)">${l}</div>`).join("");
+    // 現状値表示
+    let currentVal = "";
+    if (key==="bussan")  currentVal = `月平均${Math.round((s.avgBussan||0)/10000*10)/10}万円`;
+    if (key==="kaisu")   currentVal = `月平均${s.avgKaisu||0}件`;
+    if (key==="option")  currentVal = `月平均${Math.round((s.avgOption||0)/10000*10)/10}万円`;
+    if (key==="shimei")  currentVal = `月平均${s.avgShimei||0}名`;
+    if (key==="gijutsu") currentVal = `固定7点`;
+
+    return `<div style="border-left:3px solid ${c.color};padding:6px 10px;background:${c.bg}22;border-radius:0 6px 6px 0;margin-bottom:6px">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        <span style="font-size:11px">${a.icon}</span>
+        <span style="font-size:11.5px;font-weight:700;color:var(--ink1)">${a.label}</span>
+        <span style="background:${c.bg};color:${c.color};font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px">${itemRank}</span>
+        <span style="font-size:10px;color:var(--ink3)">${currentVal}</span>
+      </div>
+      ${lines}
+    </div>`;
+  }).join("");
+
+  return `<div style="margin-top:6px">
+    <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'"
+         style="cursor:pointer;font-size:11px;color:var(--acc);font-weight:600;padding:4px 0;display:flex;align-items:center;gap:4px">
+      📋 アクションリストを見る
+    </div>
+    <div style="display:none;margin-top:6px">${items}</div>
+  </div>`;
+}
+
 function renderStaff(){
   const el=document.getElementById("v-staff");if(!el)return;
   const d=mode==="mine"?stores.filter(s=>s.sv===mySV):stores;
@@ -951,14 +1031,14 @@ function renderStaff(){
                 <span style="flex:1;font-size:12.5px;font-weight:600">${s.name}</span>
                 ${s.avg?`<span style="font-size:11px;color:var(--ink3)">月平均 <strong style="color:var(--ink1)">${Math.round(s.avg/10000)}万</strong></span>`:""}
                 ${s.total?`<span style="font-size:11px;color:var(--ink3)">計 <strong style="color:var(--ink1)">${s.total}点</strong></span>`:""}
-                ${s.hasManual===false?`<span style="font-size:9px;color:var(--amb);border:1px solid var(--amb);padding:1px 5px;border-radius:4px">売上のみ</span>`:""}
-                ${s.source==="manual"?`<span style="font-size:9px;color:var(--ink3);border:1px solid var(--bdr);padding:1px 5px;border-radius:4px">手動</span>`:""}
-                <button onclick="openEditStaff('${store.name.replace(/'/g,"\\'")}','${s.name.replace(/'/g,"\\'")}','${s.rank||""}',${s.shimei||0},${s.option||0},${s.gijutsu||0})" style="background:none;border:1px solid var(--bdr);border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer;color:var(--ink2);font-family:inherit">編集</button>
+                ${s.source==="manual"?`<span style="font-size:9px;color:var(--ink3);border:1px solid var(--bdr);padding:1px 5px;border-radius:4px">手動登録</span>`:""}
+                <button onclick="openEditStaff('${store.name.replace(/'/g,"\\'")}','${s.name.replace(/'/g,"\\'")}','${s.rank||""}')" style="background:none;border:1px solid var(--bdr);border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer;color:var(--ink2);font-family:inherit">編集</button>
                 <button onclick="deleteStaffUI('${store.name.replace(/'/g,"\\'")}','${s.name.replace(/'/g,"\\'")}',this)" style="background:none;border:1px solid var(--red);border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer;color:var(--red);font-family:inherit">削除</button>
               </div>
-              ${months.length?`<div style="display:flex;gap:4px;flex-wrap:wrap">
+              ${months.length?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px">
                 ${months.map(([m,v])=>`<span style="font-size:10px;background:var(--sur1);padding:2px 6px;border-radius:4px;color:var(--ink3)">${MONTH_NAMES[m]||m+"月"} <strong style="color:var(--ink2)">${Math.round(v/10000)}万</strong></span>`).join("")}
               </div>`:""}
+              ${renderStaffActions(s)}
             </div>`;
           }).join("")}
         </div>`:`<div style="text-align:center;padding:12px 0;font-size:12px;color:var(--ink3)">スタッフデータなし</div>`}
@@ -978,7 +1058,7 @@ function renderStaff(){
           <input id="staff-input-name" type="text" placeholder="スタッフ名を入力" style="width:100%;padding:8px 10px;border:1.5px solid var(--bdr);border-radius:7px;background:var(--sur2);color:var(--ink1);font-size:13px;font-family:inherit;box-sizing:border-box">
         </div>
         <div>
-          <div style="font-size:11px;color:var(--ink3);margin-bottom:4px">ランク（自動算出 or 手動上書き）</div>
+          <div style="font-size:11px;color:var(--ink3);margin-bottom:4px">ランク（自動算出。手動で上書きする場合のみ選択）</div>
           <div style="display:flex;gap:8px">
             ${["松","竹","梅"].map(r=>{const c=RANK_COLORS[r];
               return `<label style="flex:1;cursor:pointer">
@@ -987,24 +1067,7 @@ function renderStaff(){
               </label>`;
             }).join("")}
           </div>
-        </div>
-        <div style="background:var(--sur2);border-radius:8px;padding:10px;margin-top:2px">
-          <div style="font-size:10px;color:var(--ink3);font-weight:700;margin-bottom:8px;letter-spacing:.05em">📝 手動入力項目（未入力は自動計算から除外）</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-            <div>
-              <div style="font-size:10px;color:var(--ink3);margin-bottom:3px">指名数（月平均）</div>
-              <input id="staff-input-shimei" type="number" placeholder="例：15" style="width:100%;padding:6px 8px;border:1.5px solid var(--bdr);border-radius:6px;background:var(--sur1);color:var(--ink1);font-size:12px;font-family:inherit;box-sizing:border-box">
-            </div>
-            <div>
-              <div style="font-size:10px;color:var(--ink3);margin-bottom:3px">OP売上（月平均円）</div>
-              <input id="staff-input-option" type="number" placeholder="例：35000" style="width:100%;padding:6px 8px;border:1.5px solid var(--bdr);border-radius:6px;background:var(--sur1);color:var(--ink1);font-size:12px;font-family:inherit;box-sizing:border-box">
-            </div>
-            <div>
-              <div style="font-size:10px;color:var(--ink3);margin-bottom:3px">技術面点数</div>
-              <input id="staff-input-gijutsu" type="number" placeholder="4/7/10" style="width:100%;padding:6px 8px;border:1.5px solid var(--bdr);border-radius:6px;background:var(--sur1);color:var(--ink1);font-size:12px;font-family:inherit;box-sizing:border-box">
-              <div style="font-size:9px;color:var(--ink3);margin-top:2px">口コミゼロ=10 / 1件=7 / 2件=4</div>
-            </div>
-          </div>
+          <div style="font-size:10px;color:var(--ink3);margin-top:4px">※ 選択しない場合は売上データから自動算出されます</div>
         </div>
       </div>
       <div style="display:flex;gap:8px;margin-top:16px">
@@ -1129,23 +1192,17 @@ function renderStaff(){
 let _staffModalStore="",_staffModalOldName="";
 function openAddStaff(store){
   _staffModalStore=store;_staffModalOldName="";
-  document.getElementById("staff-modal-ttl").textContent=`スタッフ追加 ー ${store}`;
+  document.getElementById("staff-modal-ttl").textContent=`スタッフ手動追加 ー ${store}`;
   document.getElementById("staff-input-name").value="";
-  document.getElementById("staff-input-shimei").value="";
-  document.getElementById("staff-input-option").value="";
-  document.getElementById("staff-input-gijutsu").value="";
   document.querySelectorAll("input[name='staff-rank']").forEach(r=>r.checked=false);
   document.querySelectorAll(".rank-opt").forEach(d=>{d.style.border="2px solid var(--bdr)";d.style.background="";d.style.color="";});
   const m=document.getElementById("staff-modal");m.style.display="flex";
   document.getElementById("staff-modal-save").onclick=saveStaff;
 }
-function openEditStaff(store,name,rank,shimei,option,gijutsu){
+function openEditStaff(store,name,rank){
   _staffModalStore=store;_staffModalOldName=name;
-  document.getElementById("staff-modal-ttl").textContent=`スタッフ編集 ー ${name}`;
+  document.getElementById("staff-modal-ttl").textContent=`ランク上書き ー ${name}`;
   document.getElementById("staff-input-name").value=name;
-  document.getElementById("staff-input-shimei").value=shimei||"";
-  document.getElementById("staff-input-option").value=option||"";
-  document.getElementById("staff-input-gijutsu").value=gijutsu||"";
   const inp=document.querySelector(`input[name='staff-rank'][value='${rank}']`);
   if(inp){inp.checked=true;inp.dispatchEvent(new Event("change"));}
   else{document.querySelectorAll("input[name='staff-rank']").forEach(r=>r.checked=false);document.querySelectorAll(".rank-opt").forEach(d=>{d.style.border="2px solid var(--bdr)";d.style.background="";d.style.color="";});}
@@ -1156,9 +1213,6 @@ function closeStaffModal(){document.getElementById("staff-modal").style.display=
 async function saveStaff(){
   const name=document.getElementById("staff-input-name").value.trim();
   const rank=(document.querySelector("input[name='staff-rank']:checked")||{}).value||"";
-  const shimei=parseFloat(document.getElementById("staff-input-shimei").value)||0;
-  const option=parseFloat(document.getElementById("staff-input-option").value)||0;
-  const gijutsu=parseFloat(document.getElementById("staff-input-gijutsu").value)||0;
   if(!name)return alert("スタッフ名を入力してください");
   if(_staffModalOldName&&_staffModalOldName!==name){
     staffRanks=staffRanks.filter(r=>!(r.store===_staffModalStore&&r.name===_staffModalOldName));
@@ -1166,13 +1220,12 @@ async function saveStaff(){
     if(API_URL)fetch(API_URL,{method:"POST",body:JSON.stringify({action:"deleteStaff",store:_staffModalStore,staff:_staffModalOldName})}).catch(()=>{});
   }
   const existing=staffRanks.find(r=>r.store===_staffModalStore&&r.name===name);
-  if(existing){existing.rank=rank;existing.shimei=shimei;existing.option=option;existing.gijutsu=gijutsu;}
-  else staffRanks.push({store:_staffModalStore,name,rank,shimei,option,gijutsu});
-  // staffSalesの手動項目も更新
+  if(existing){existing.rank=rank;}
+  else staffRanks.push({store:_staffModalStore,name,rank});
   const es=staffSales.find(r=>r.store===_staffModalStore&&r.name===name);
-  if(es){es.shimei=shimei;es.option=option;es.gijutsu=gijutsu;if(rank)es.rank=rank;}
+  if(es&&rank)es.rank=rank;
   closeStaffModal();
-  if(API_URL)await fetch(API_URL,{method:"POST",body:JSON.stringify({action:"updateStaffRank",store:_staffModalStore,staff:name,rank,score:0,shimei,option,gijutsu})}).catch(()=>{});
+  if(API_URL)await fetch(API_URL,{method:"POST",body:JSON.stringify({action:"updateStaffRank",store:_staffModalStore,staff:name,rank,score:0})}).catch(()=>{});
   renderStaff();renderContent();
 }
 async function deleteStaffUI(store,name,btn){
