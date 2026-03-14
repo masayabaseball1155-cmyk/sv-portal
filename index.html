@@ -950,8 +950,10 @@ function renderStaff(){
                 <span style="background:${c.bg};color:${c.color};font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;min-width:42px;text-align:center">${c.icon}${s.rank||"未"}</span>
                 <span style="flex:1;font-size:12.5px;font-weight:600">${s.name}</span>
                 ${s.avg?`<span style="font-size:11px;color:var(--ink3)">月平均 <strong style="color:var(--ink1)">${Math.round(s.avg/10000)}万</strong></span>`:""}
+                ${s.total?`<span style="font-size:11px;color:var(--ink3)">計 <strong style="color:var(--ink1)">${s.total}点</strong></span>`:""}
+                ${s.hasManual===false?`<span style="font-size:9px;color:var(--amb);border:1px solid var(--amb);padding:1px 5px;border-radius:4px">売上のみ</span>`:""}
                 ${s.source==="manual"?`<span style="font-size:9px;color:var(--ink3);border:1px solid var(--bdr);padding:1px 5px;border-radius:4px">手動</span>`:""}
-                <button onclick="openEditStaff('${store.name.replace(/'/g,"\\'")}','${s.name.replace(/'/g,"\\'")}','${s.rank}',0)" style="background:none;border:1px solid var(--bdr);border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer;color:var(--ink2);font-family:inherit">編集</button>
+                <button onclick="openEditStaff('${store.name.replace(/'/g,"\\'")}','${s.name.replace(/'/g,"\\'")}','${s.rank||""}',${s.shimei||0},${s.option||0},${s.gijutsu||0})" style="background:none;border:1px solid var(--bdr);border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer;color:var(--ink2);font-family:inherit">編集</button>
                 <button onclick="deleteStaffUI('${store.name.replace(/'/g,"\\'")}','${s.name.replace(/'/g,"\\'")}',this)" style="background:none;border:1px solid var(--red);border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer;color:var(--red);font-family:inherit">削除</button>
               </div>
               ${months.length?`<div style="display:flex;gap:4px;flex-wrap:wrap">
@@ -976,7 +978,7 @@ function renderStaff(){
           <input id="staff-input-name" type="text" placeholder="スタッフ名を入力" style="width:100%;padding:8px 10px;border:1.5px solid var(--bdr);border-radius:7px;background:var(--sur2);color:var(--ink1);font-size:13px;font-family:inherit;box-sizing:border-box">
         </div>
         <div>
-          <div style="font-size:11px;color:var(--ink3);margin-bottom:4px">ランク（手動上書き）</div>
+          <div style="font-size:11px;color:var(--ink3);margin-bottom:4px">ランク（自動算出 or 手動上書き）</div>
           <div style="display:flex;gap:8px">
             ${["松","竹","梅"].map(r=>{const c=RANK_COLORS[r];
               return `<label style="flex:1;cursor:pointer">
@@ -984,6 +986,24 @@ function renderStaff(){
                 <div class="rank-opt" data-rank="${r}" style="text-align:center;padding:8px;border:2px solid var(--bdr);border-radius:8px;font-size:13px;font-weight:700;transition:all .15s">${c.icon}${r}</div>
               </label>`;
             }).join("")}
+          </div>
+        </div>
+        <div style="background:var(--sur2);border-radius:8px;padding:10px;margin-top:2px">
+          <div style="font-size:10px;color:var(--ink3);font-weight:700;margin-bottom:8px;letter-spacing:.05em">📝 手動入力項目（未入力は自動計算から除外）</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+            <div>
+              <div style="font-size:10px;color:var(--ink3);margin-bottom:3px">指名数（月平均）</div>
+              <input id="staff-input-shimei" type="number" placeholder="例：15" style="width:100%;padding:6px 8px;border:1.5px solid var(--bdr);border-radius:6px;background:var(--sur1);color:var(--ink1);font-size:12px;font-family:inherit;box-sizing:border-box">
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--ink3);margin-bottom:3px">OP売上（月平均円）</div>
+              <input id="staff-input-option" type="number" placeholder="例：35000" style="width:100%;padding:6px 8px;border:1.5px solid var(--bdr);border-radius:6px;background:var(--sur1);color:var(--ink1);font-size:12px;font-family:inherit;box-sizing:border-box">
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--ink3);margin-bottom:3px">技術面点数</div>
+              <input id="staff-input-gijutsu" type="number" placeholder="4/7/10" style="width:100%;padding:6px 8px;border:1.5px solid var(--bdr);border-radius:6px;background:var(--sur1);color:var(--ink1);font-size:12px;font-family:inherit;box-sizing:border-box">
+              <div style="font-size:9px;color:var(--ink3);margin-top:2px">口コミゼロ=10 / 1件=7 / 2件=4</div>
+            </div>
           </div>
         </div>
       </div>
@@ -1111,19 +1131,24 @@ function openAddStaff(store){
   _staffModalStore=store;_staffModalOldName="";
   document.getElementById("staff-modal-ttl").textContent=`スタッフ追加 ー ${store}`;
   document.getElementById("staff-input-name").value="";
-  document.getElementById("staff-input-score").value="";
+  document.getElementById("staff-input-shimei").value="";
+  document.getElementById("staff-input-option").value="";
+  document.getElementById("staff-input-gijutsu").value="";
   document.querySelectorAll("input[name='staff-rank']").forEach(r=>r.checked=false);
   document.querySelectorAll(".rank-opt").forEach(d=>{d.style.border="2px solid var(--bdr)";d.style.background="";d.style.color="";});
   const m=document.getElementById("staff-modal");m.style.display="flex";
   document.getElementById("staff-modal-save").onclick=saveStaff;
 }
-function openEditStaff(store,name,rank,score){
+function openEditStaff(store,name,rank,shimei,option,gijutsu){
   _staffModalStore=store;_staffModalOldName=name;
   document.getElementById("staff-modal-ttl").textContent=`スタッフ編集 ー ${name}`;
   document.getElementById("staff-input-name").value=name;
-  document.getElementById("staff-input-score").value=score||"";
+  document.getElementById("staff-input-shimei").value=shimei||"";
+  document.getElementById("staff-input-option").value=option||"";
+  document.getElementById("staff-input-gijutsu").value=gijutsu||"";
   const inp=document.querySelector(`input[name='staff-rank'][value='${rank}']`);
   if(inp){inp.checked=true;inp.dispatchEvent(new Event("change"));}
+  else{document.querySelectorAll("input[name='staff-rank']").forEach(r=>r.checked=false);document.querySelectorAll(".rank-opt").forEach(d=>{d.style.border="2px solid var(--bdr)";d.style.background="";d.style.color="";});}
   const m=document.getElementById("staff-modal");m.style.display="flex";
   document.getElementById("staff-modal-save").onclick=saveStaff;
 }
@@ -1131,18 +1156,23 @@ function closeStaffModal(){document.getElementById("staff-modal").style.display=
 async function saveStaff(){
   const name=document.getElementById("staff-input-name").value.trim();
   const rank=(document.querySelector("input[name='staff-rank']:checked")||{}).value||"";
-  const score=parseFloat(document.getElementById("staff-input-score").value)||0;
+  const shimei=parseFloat(document.getElementById("staff-input-shimei").value)||0;
+  const option=parseFloat(document.getElementById("staff-input-option").value)||0;
+  const gijutsu=parseFloat(document.getElementById("staff-input-gijutsu").value)||0;
   if(!name)return alert("スタッフ名を入力してください");
-  // 古い名前があれば削除してから追加
   if(_staffModalOldName&&_staffModalOldName!==name){
     staffRanks=staffRanks.filter(r=>!(r.store===_staffModalStore&&r.name===_staffModalOldName));
+    staffSales=staffSales.filter(r=>!(r.store===_staffModalStore&&r.name===_staffModalOldName));
     if(API_URL)fetch(API_URL,{method:"POST",body:JSON.stringify({action:"deleteStaff",store:_staffModalStore,staff:_staffModalOldName})}).catch(()=>{});
   }
   const existing=staffRanks.find(r=>r.store===_staffModalStore&&r.name===name);
-  if(existing){existing.rank=rank;existing.score=score;}
-  else staffRanks.push({store:_staffModalStore,name,rank,score});
+  if(existing){existing.rank=rank;existing.shimei=shimei;existing.option=option;existing.gijutsu=gijutsu;}
+  else staffRanks.push({store:_staffModalStore,name,rank,shimei,option,gijutsu});
+  // staffSalesの手動項目も更新
+  const es=staffSales.find(r=>r.store===_staffModalStore&&r.name===name);
+  if(es){es.shimei=shimei;es.option=option;es.gijutsu=gijutsu;if(rank)es.rank=rank;}
   closeStaffModal();
-  if(API_URL)await fetch(API_URL,{method:"POST",body:JSON.stringify({action:"updateStaffRank",store:_staffModalStore,staff:name,rank,score})}).catch(()=>{});
+  if(API_URL)await fetch(API_URL,{method:"POST",body:JSON.stringify({action:"updateStaffRank",store:_staffModalStore,staff:name,rank,score:0,shimei,option,gijutsu})}).catch(()=>{});
   renderStaff();renderContent();
 }
 async function deleteStaffUI(store,name,btn){
