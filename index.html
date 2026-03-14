@@ -377,7 +377,7 @@ const pcc=p=>p>=100?"var(--grn)":p>=80?"var(--amb)":"var(--red)";
 const fk=n=>{n=n||0;if(n>=10000)return(n/10000).toFixed(1)+"万";return n.toLocaleString()};
 const fm=n=>{n=n||0;if(n>=100000000)return(n/100000000).toFixed(1)+"億";if(n>=10000)return Math.round(n/10000)+"万";return n.toLocaleString()};
 
-let API_URL=localStorage.getItem("gas_url")||"https://script.google.com/macros/s/AKfycbwfbVQec_eWXD74uppOSuiEXd8PvF1wuH6fGpKke2_bXNCxbw7QAYbsE38-h_wC9oui/exec";
+let API_URL=localStorage.getItem("gas_url")||"https://script.google.com/macros/s/AKfycbzh4nxii7JrG4b2RhVQicHxiGRDARtPrtnZLEoJMvWl3XWM7Y9dXCVXRIH52wtbjO94/exec";
 let mySV=localStorage.getItem("my_sv")||"";
 let mode="all";
 let stores=[],tasks=[],staffRanks=[],staffSales=[];
@@ -972,20 +972,11 @@ function renderStaff(){
   const salesMap={};
   staffSales.forEach(s=>{salesMap[s.store+"|"+s.name]=s;});
   const rankMap={};
-  staffRanks.forEach(s=>{rankMap[s.store+"|"+s.name]=s;});
-
-  // 全スタッフ統合（売上データ優先、手動登録で補完）
+  // 売上データからスタッフを自動取得
   const allStaff={};
   staffSales.forEach(s=>{
     const k=s.store+"|"+s.name;
-    const manual=rankMap[k];
-    allStaff[k]={store:s.store,name:s.name,avg:s.avg,rank:manual?.rank||s.rank,
-      monthly:s.monthly,months:s.months,source:"auto"};
-  });
-  staffRanks.forEach(s=>{
-    const k=s.store+"|"+s.name;
-    if(!allStaff[k]) allStaff[k]={store:s.store,name:s.name,avg:0,rank:s.rank,
-      monthly:{},months:0,source:"manual",score:s.score};
+    allStaff[k]={...s};
   });
 
   const totalStaff=Object.values(allStaff).filter(s=>d.some(st=>st.name===s.store));
@@ -994,7 +985,7 @@ function renderStaff(){
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:8px">
       <div>
         <div style="font-size:18px;font-weight:700">スタッフランク</div>
-        <div style="font-size:12px;color:var(--ink3);margin-top:2px">半年間（9〜2月）の月平均売上でランク自動算出｜松:85万以上 / 竹:73〜85万 / 梅:73万以下</div>
+        <div style="font-size:12px;color:var(--ink3);margin-top:2px">売上シートからスタッフを自動取得｜6項目合計点で松/竹/梅を自動算出</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         ${["松","竹","梅"].map(r=>{const c=RANK_COLORS[r];const cnt=totalStaff.filter(s=>s.rank===r).length;
@@ -1019,7 +1010,7 @@ function renderStaff(){
       html+=`<div style="background:var(--sur1);border:1px solid var(--bdr);border-radius:10px;padding:14px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
           <div style="font-weight:700;font-size:13px">${store.name}</div>
-          <button onclick="openAddStaff('${store.name.replace(/'/g,"\\'")}')" style="background:var(--acc);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit">＋手動追加</button>
+          <div style="font-size:11px;color:var(--ink3)">${sr.length}名</div>
         </div>
         ${sr.length?`<div style="display:flex;flex-direction:column;gap:5px">
           ${sr.map(s=>{
@@ -1031,9 +1022,6 @@ function renderStaff(){
                 <span style="flex:1;font-size:12.5px;font-weight:600">${s.name}</span>
                 ${s.avg?`<span style="font-size:11px;color:var(--ink3)">月平均 <strong style="color:var(--ink1)">${Math.round(s.avg/10000)}万</strong></span>`:""}
                 ${s.total?`<span style="font-size:11px;color:var(--ink3)">計 <strong style="color:var(--ink1)">${s.total}点</strong></span>`:""}
-                ${s.source==="manual"?`<span style="font-size:9px;color:var(--ink3);border:1px solid var(--bdr);padding:1px 5px;border-radius:4px">手動登録</span>`:""}
-                <button onclick="openEditStaff('${store.name.replace(/'/g,"\\'")}','${s.name.replace(/'/g,"\\'")}','${s.rank||""}')" style="background:none;border:1px solid var(--bdr);border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer;color:var(--ink2);font-family:inherit">編集</button>
-                <button onclick="deleteStaffUI('${store.name.replace(/'/g,"\\'")}','${s.name.replace(/'/g,"\\'")}',this)" style="background:none;border:1px solid var(--red);border-radius:5px;padding:2px 7px;font-size:10px;cursor:pointer;color:var(--red);font-family:inherit">削除</button>
               </div>
               ${months.length?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px">
                 ${months.map(([m,v])=>`<span style="font-size:10px;background:var(--sur1);padding:2px 6px;border-radius:4px;color:var(--ink3)">${MONTH_NAMES[m]||m+"月"} <strong style="color:var(--ink2)">${Math.round(v/10000)}万</strong></span>`).join("")}
@@ -1041,199 +1029,19 @@ function renderStaff(){
               ${renderStaffActions(s)}
             </div>`;
           }).join("")}
-        </div>`:`<div style="text-align:center;padding:12px 0;font-size:12px;color:var(--ink3)">スタッフデータなし</div>`}
+        </div>`:`<div style="text-align:center;padding:12px 0;font-size:12px;color:var(--ink3)">売上データなし</div>`}
       </div>`;
     });
     html+=`</div></div>`;
   });
 
-  html+=`</div>
-  <!-- スタッフ手動追加/編集モーダル -->
-  <div id="staff-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center">
-    <div style="background:var(--sur1);border-radius:12px;padding:24px;width:340px;box-shadow:0 8px 32px rgba(0,0,0,.3)">
-      <div id="staff-modal-ttl" style="font-size:15px;font-weight:700;margin-bottom:16px"></div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div>
-          <div style="font-size:11px;color:var(--ink3);margin-bottom:4px">スタッフ名</div>
-          <input id="staff-input-name" type="text" placeholder="スタッフ名を入力" style="width:100%;padding:8px 10px;border:1.5px solid var(--bdr);border-radius:7px;background:var(--sur2);color:var(--ink1);font-size:13px;font-family:inherit;box-sizing:border-box">
-        </div>
-        <div>
-          <div style="font-size:11px;color:var(--ink3);margin-bottom:4px">ランク（自動算出。手動で上書きする場合のみ選択）</div>
-          <div style="display:flex;gap:8px">
-            ${["松","竹","梅"].map(r=>{const c=RANK_COLORS[r];
-              return `<label style="flex:1;cursor:pointer">
-                <input type="radio" name="staff-rank" value="${r}" style="display:none">
-                <div class="rank-opt" data-rank="${r}" style="text-align:center;padding:8px;border:2px solid var(--bdr);border-radius:8px;font-size:13px;font-weight:700;transition:all .15s">${c.icon}${r}</div>
-              </label>`;
-            }).join("")}
-          </div>
-          <div style="font-size:10px;color:var(--ink3);margin-top:4px">※ 選択しない場合は売上データから自動算出されます</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:16px">
-        <button onclick="closeStaffModal()" style="flex:1;padding:9px;border:1.5px solid var(--bdr);border-radius:8px;background:none;color:var(--ink2);cursor:pointer;font-family:inherit;font-size:13px">キャンセル</button>
-        <button id="staff-modal-save" style="flex:2;padding:9px;border:none;border-radius:8px;background:var(--acc);color:#fff;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700">保存</button>
-      </div>
-    </div>
-  </div>`;
+  html+=`</div>`;
 
   el.innerHTML=html;
-
-  document.querySelectorAll("input[name='staff-rank']").forEach(inp=>{
-    inp.addEventListener("change",()=>{
-      document.querySelectorAll(".rank-opt").forEach(d=>{d.style.border="2px solid var(--bdr)";d.style.background="";d.style.color="";});
-      const r=inp.value;const c=RANK_COLORS[r];
-      const opt=document.querySelector(`.rank-opt[data-rank="${r}"]`);
-      if(opt){opt.style.border=`2px solid ${c.color}`;opt.style.background=c.bg;opt.style.color=c.color;}
-    });
-  });
 }
 
-function renderStaff(){
-  const el=document.getElementById("v-staff");if(!el)return;
-  const d=mode==="mine"?stores.filter(s=>s.sv===mySV):stores;
-  const svs=[...new Set(d.map(s=>s.sv))].sort();
 
-  let html=`<div style="padding:20px 24px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-      <div>
-        <div style="font-size:18px;font-weight:700">スタッフランク</div>
-        <div style="font-size:12px;color:var(--ink3);margin-top:2px">店舗ごとのスタッフランク管理</div>
-      </div>
-      <div style="display:flex;gap:8px">
-        ${["松","竹","梅"].map(r=>{const c=RANK_COLORS[r];const cnt=staffRanks.filter(s=>s.rank===r&&d.some(st=>st.name===s.store)).length;
-          return `<div style="background:${c.bg};color:${c.color};padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700">${c.icon}${r} ${cnt}人</div>`;
-        }).join("")}
-        <div style="background:var(--sur2);color:var(--ink2);padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700">合計 ${staffRanks.filter(s=>d.some(st=>st.name===s.store)).length}人</div>
-      </div>
-    </div>`;
 
-  svs.forEach(sv=>{
-    const svStores=d.filter(s=>s.sv===sv);
-    html+=`<div style="margin-bottom:28px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-        <div style="width:10px;height:10px;border-radius:50%;background:${svc(sv)}"></div>
-        <strong style="font-size:13px">${sv}</strong>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px">`;
-
-    svStores.forEach(store=>{
-      const sr=staffRanks.filter(r=>r.store===store.name);
-      html+=`<div style="background:var(--sur1);border:1px solid var(--bdr);border-radius:10px;padding:14px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div style="font-weight:700;font-size:13px">${store.name}</div>
-          <button onclick="openAddStaff('${store.name.replace(/'/g,"\\'")}')" style="background:var(--acc);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit">＋追加</button>
-        </div>
-        ${sr.length?`<div style="display:flex;flex-direction:column;gap:6px">
-          ${sr.map(s=>{const c=RANK_COLORS[s.rank]||{bg:"var(--sur2)",color:"var(--ink2)",icon:"👤"};
-            return `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--sur2);border-radius:7px">
-              <span style="background:${c.bg};color:${c.color};font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;min-width:42px;text-align:center">${c.icon}${s.rank||"未設定"}</span>
-              <span style="flex:1;font-size:12.5px;font-weight:600">${s.name}</span>
-              ${s.score?`<span style="font-size:11px;color:var(--ink3)">${s.score}点</span>`:""}
-              <button onclick="openEditStaff('${store.name.replace(/'/g,"\\'")}','${s.name.replace(/'/g,"\\'")}','${s.rank}',${s.score||0})" style="background:none;border:1px solid var(--bdr);border-radius:5px;padding:2px 8px;font-size:11px;cursor:pointer;color:var(--ink2);font-family:inherit">編集</button>
-              <button onclick="deleteStaffUI('${store.name.replace(/'/g,"\\'")}','${s.name.replace(/'/g,"\\'")}',this)" style="background:none;border:1px solid var(--red);border-radius:5px;padding:2px 8px;font-size:11px;cursor:pointer;color:var(--red);font-family:inherit">削除</button>
-            </div>`;
-          }).join("")}
-        </div>`:`<div style="text-align:center;padding:12px 0;font-size:12px;color:var(--ink3)">スタッフ未登録</div>`}
-      </div>`;
-    });
-    html+=`</div></div>`;
-  });
-
-  html+=`</div>
-  <!-- スタッフ追加/編集モーダル -->
-  <div id="staff-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center">
-    <div style="background:var(--sur1);border-radius:12px;padding:24px;width:340px;box-shadow:0 8px 32px rgba(0,0,0,.3)">
-      <div id="staff-modal-ttl" style="font-size:15px;font-weight:700;margin-bottom:16px"></div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div>
-          <div style="font-size:11px;color:var(--ink3);margin-bottom:4px">スタッフ名</div>
-          <input id="staff-input-name" type="text" placeholder="スタッフ名を入力" style="width:100%;padding:8px 10px;border:1.5px solid var(--bdr);border-radius:7px;background:var(--sur2);color:var(--ink1);font-size:13px;font-family:inherit;box-sizing:border-box">
-        </div>
-        <div>
-          <div style="font-size:11px;color:var(--ink3);margin-bottom:4px">ランク</div>
-          <div style="display:flex;gap:8px">
-            ${["松","竹","梅"].map(r=>{const c=RANK_COLORS[r];
-              return `<label style="flex:1;cursor:pointer">
-                <input type="radio" name="staff-rank" value="${r}" style="display:none">
-                <div class="rank-opt" data-rank="${r}" style="text-align:center;padding:8px;border:2px solid var(--bdr);border-radius:8px;font-size:13px;font-weight:700;transition:all .15s">${c.icon}${r}</div>
-              </label>`;
-            }).join("")}
-          </div>
-        </div>
-        <div>
-          <div style="font-size:11px;color:var(--ink3);margin-bottom:4px">点数（任意）</div>
-          <input id="staff-input-score" type="number" placeholder="例：48" style="width:100%;padding:8px 10px;border:1.5px solid var(--bdr);border-radius:7px;background:var(--sur2);color:var(--ink1);font-size:13px;font-family:inherit;box-sizing:border-box">
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:16px">
-        <button onclick="closeStaffModal()" style="flex:1;padding:9px;border:1.5px solid var(--bdr);border-radius:8px;background:none;color:var(--ink2);cursor:pointer;font-family:inherit;font-size:13px">キャンセル</button>
-        <button id="staff-modal-save" style="flex:2;padding:9px;border:none;border-radius:8px;background:var(--acc);color:#fff;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700">保存</button>
-      </div>
-    </div>
-  </div>`;
-
-  el.innerHTML=html;
-
-  // ランク選択UIの初期化
-  document.querySelectorAll("input[name='staff-rank']").forEach(inp=>{
-    inp.addEventListener("change",()=>{
-      document.querySelectorAll(".rank-opt").forEach(d=>{
-        const r=d.dataset.rank;const c=RANK_COLORS[r];
-        d.style.border=`2px solid var(--bdr)`;d.style.background="";d.style.color="";
-      });
-      const r=inp.value;const c=RANK_COLORS[r];
-      const opt=document.querySelector(`.rank-opt[data-rank="${r}"]`);
-      if(opt){opt.style.border=`2px solid ${c.color}`;opt.style.background=c.bg;opt.style.color=c.color;}
-    });
-  });
-}
-
-let _staffModalStore="",_staffModalOldName="";
-function openAddStaff(store){
-  _staffModalStore=store;_staffModalOldName="";
-  document.getElementById("staff-modal-ttl").textContent=`スタッフ手動追加 ー ${store}`;
-  document.getElementById("staff-input-name").value="";
-  document.querySelectorAll("input[name='staff-rank']").forEach(r=>r.checked=false);
-  document.querySelectorAll(".rank-opt").forEach(d=>{d.style.border="2px solid var(--bdr)";d.style.background="";d.style.color="";});
-  const m=document.getElementById("staff-modal");m.style.display="flex";
-  document.getElementById("staff-modal-save").onclick=saveStaff;
-}
-function openEditStaff(store,name,rank){
-  _staffModalStore=store;_staffModalOldName=name;
-  document.getElementById("staff-modal-ttl").textContent=`ランク上書き ー ${name}`;
-  document.getElementById("staff-input-name").value=name;
-  const inp=document.querySelector(`input[name='staff-rank'][value='${rank}']`);
-  if(inp){inp.checked=true;inp.dispatchEvent(new Event("change"));}
-  else{document.querySelectorAll("input[name='staff-rank']").forEach(r=>r.checked=false);document.querySelectorAll(".rank-opt").forEach(d=>{d.style.border="2px solid var(--bdr)";d.style.background="";d.style.color="";});}
-  const m=document.getElementById("staff-modal");m.style.display="flex";
-  document.getElementById("staff-modal-save").onclick=saveStaff;
-}
-function closeStaffModal(){document.getElementById("staff-modal").style.display="none";}
-async function saveStaff(){
-  const name=document.getElementById("staff-input-name").value.trim();
-  const rank=(document.querySelector("input[name='staff-rank']:checked")||{}).value||"";
-  if(!name)return alert("スタッフ名を入力してください");
-  if(_staffModalOldName&&_staffModalOldName!==name){
-    staffRanks=staffRanks.filter(r=>!(r.store===_staffModalStore&&r.name===_staffModalOldName));
-    staffSales=staffSales.filter(r=>!(r.store===_staffModalStore&&r.name===_staffModalOldName));
-    if(API_URL)fetch(API_URL,{method:"POST",body:JSON.stringify({action:"deleteStaff",store:_staffModalStore,staff:_staffModalOldName})}).catch(()=>{});
-  }
-  const existing=staffRanks.find(r=>r.store===_staffModalStore&&r.name===name);
-  if(existing){existing.rank=rank;}
-  else staffRanks.push({store:_staffModalStore,name,rank});
-  const es=staffSales.find(r=>r.store===_staffModalStore&&r.name===name);
-  if(es&&rank)es.rank=rank;
-  closeStaffModal();
-  if(API_URL)await fetch(API_URL,{method:"POST",body:JSON.stringify({action:"updateStaffRank",store:_staffModalStore,staff:name,rank,score:0})}).catch(()=>{});
-  renderStaff();renderContent();
-}
-async function deleteStaffUI(store,name,btn){
-  if(!confirm(`「${name}」を削除しますか？`))return;
-  staffRanks=staffRanks.filter(r=>!(r.store===store&&r.name===name));
-  if(API_URL)await fetch(API_URL,{method:"POST",body:JSON.stringify({action:"deleteStaff",store,staff:name})}).catch(()=>{});
-  renderStaff();renderContent();
-}
 
 // ─ CHART（Canvas自前描画）─
 let _charts={};
